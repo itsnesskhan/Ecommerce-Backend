@@ -1,0 +1,49 @@
+package com.ecommerce.product.controller;
+
+import java.io.IOException;
+import java.util.List;
+
+import jakarta.servlet.annotation.MultipartConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.ecommerce.product.dto.ProductDto;
+import com.ecommerce.product.payloads.ResponseHandler;
+import com.ecommerce.product.service.ProductService;
+import org.springframework.web.multipart.MultipartFile;
+
+@RequestMapping("api/v1/product")
+@RestController
+public class ProductController {
+	
+	@Autowired
+	private ProductService productService;
+
+	@PostMapping(path = "/add", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE})
+	public ResponseEntity<?> addProduct(@ModelAttribute ProductDto productDto) throws IOException {
+		ProductDto product = productService.addProduct(productDto);
+		return ResponseHandler.responseBuilder("product added successfully!", HttpStatus.CREATED, product);
+	}
+	
+	@GetMapping("/all")
+	public ResponseEntity<?> getAllProducts(){
+		List<ProductDto> allProducts = productService.getAllProducts();
+		return ResponseHandler.responseBuilder("all products", HttpStatus.OK, allProducts);
+	}
+	
+	@GetMapping("/{id}")
+	public ResponseEntity<?> getProductById(@PathVariable Integer id){
+		ProductDto product = productService.getProductById(id);
+		return ResponseHandler.responseBuilder("product with id :"+id, HttpStatus.OK, product);
+	}
+	
+	@GetMapping(path = "/get-image/{imageName}", produces = MediaType.IMAGE_JPEG_VALUE)
+	public void getProfileImage(@PathVariable String imageName){
+		productService.downloadImage(imageName);
+	}
+	
+
+}

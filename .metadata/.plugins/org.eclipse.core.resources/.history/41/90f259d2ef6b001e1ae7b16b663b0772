@@ -1,0 +1,18 @@
+package com.ecommerce.product.service;
+
+import java.io.IOException;
+import java.util.List;
+
+import com.ecommerce.product.dto.AddProductRequest;
+import com.ecommerce.product.dto.ProductDto;
+
+public interface ProductService {
+
+	ProductDto addProduct(AddProductRequest productDto) throws IOException;
+	
+	List<ProductDto> getAllProducts();
+	
+	ProductDto getProductById(Integer id);
+	
+	void downloadImage(String imageName);
+}

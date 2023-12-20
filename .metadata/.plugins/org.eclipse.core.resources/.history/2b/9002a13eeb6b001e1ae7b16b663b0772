@@ -1,0 +1,83 @@
+package com.ecommerce.product.service.impl;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import com.ecommerce.product.service.FileService;
+import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+
+import com.ecommerce.product.dto.ProductDto;
+import com.ecommerce.product.entity.Product;
+import com.ecommerce.product.exception.CategoryNotFoundException;
+import com.ecommerce.product.exception.ProductNotFoundException;
+import com.ecommerce.product.repository.CategoryRepository;
+import com.ecommerce.product.repository.ProductRepository;
+import com.ecommerce.product.service.ProductService;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+@RequiredArgsConstructor
+@Service
+public class ProductServiceImpl implements ProductService {
+
+	@Autowired
+	private final ProductRepository productRepository;
+
+	@Autowired
+	private final CategoryRepository categoryRepository;
+
+	@Autowired
+	private final ModelMapper modelMapper;
+
+	@Autowired
+	private final FileService fileService;
+
+	private final String path  =System.getProperty("user.dir") + File.separator + "src" + File.separator + "main"
+			+ File.separator + "resources" + File.separator+"static"+File.separator+"product"+File.separator+"images";
+
+	@Override
+	public ProductDto addProduct(ProductDto productDto) throws IOException {
+		final Integer categoryId = productDto.getCategory_id();
+		categoryRepository.findById(productDto.getCategory_id().longValue()).orElseThrow(
+				() -> new CategoryNotFoundException("category not found with id :"+categoryId));
+		Product product = modelMapper.map(productDto, Product.class);
+
+		if (!productDto.getThumbnailUrl().isEmpty()){
+			try {
+				String fileName = fileService.uploadImage(path, productDto.getThumbnailUrl());
+				String thumbnailUrl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/v1/product/"+path)
+						.path(fileName).toUriString();
+				product.setThumbnailUrl(thumbnailUrl);
+				product = productRepository.save(product);
+				productDto = modelMapper.map(product, ProductDto.class);
+				return  productDto;
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		product = productRepository.save(product);
+		return modelMapper.map(product, productDto.getClass());
+	}
+
+	@Override
+	public List<ProductDto> getAllProducts() {
+		List<Product> all = productRepository.findAll();
+		return Arrays.asList(modelMapper.map(all, ProductDto[].class));
+	}
+
+	@Override
+	public ProductDto getProductById(Integer id) {
+		Product prodcut = productRepository.findById(id)
+				.orElseThrow(() -> new ProductNotFoundException("product not found with id " + id));
+		return modelMapper.map(prodcut, ProductDto.class);
+	}
+
+}
